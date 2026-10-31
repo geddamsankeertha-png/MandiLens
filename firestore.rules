@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      // Set this Firebase custom claim only from a trusted server-side admin process.
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // User profile validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'role']) &&
+             data.keys().hasOnly(['id', 'email', 'displayName', 'role', 'preferredState', 'preferredMarket', 'createdAt', 'phone', 'emailVerified', 'phoneVerified']) &&
+             data.id == request.auth.uid &&
+             data.email is string && data.email.size() <= 256 &&
+             data.email == request.auth.token.email &&
+             data.emailVerified == request.auth.token.email_verified &&
+             data.phoneVerified == (data.phone == request.auth.token.phone_number) &&
+             data.role == 'farmer';
+    }
+
+    // Saved Scenario validation
+    function isValidSavedScenario(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'cropGroup', 'state', 'market', 'predictedPriceQuintal']) &&
+             data.keys().hasOnly(['id', 'userId', 'cropGroup', 'cropName', 'state', 'market', 'predictedPriceQuintal', 'predictedPriceTonne', 'createdAt', 'inputs']) &&
+             data.userId == userId &&
+             data.cropGroup is string && data.cropGroup.size() <= 50 &&
+             data.state is string && data.state.size() <= 50 &&
+             data.market is string && data.market.size() <= 50 &&
+             data.predictedPriceQuintal is number;
+    }
+
+    // Watchlist item validation
+    function isValidWatchlist(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'state', 'market']) &&
+             data.keys().hasOnly(['id', 'userId', 'state', 'market', 'targetPrice', 'alertCondition', 'addedAt']) &&
+             data.userId == userId &&
+             data.state is string && data.state.size() <= 50 &&
+             data.market is string && data.market.size() <= 50;
+    }
+
+    // Live update validation
+    function isValidLiveUpdate(data) {
+      return data.keys().hasAll(['id', 'state', 'market', 'group', 'currentPrice']) &&
+             data.keys().hasOnly(['id', 'state', 'market', 'group', 'currentPrice', 'momChangePercent', 'direction', 'updatedAt']) &&
+             data.state is string && data.state.size() <= 50 &&
+             data.market is string && data.market.size() <= 50 &&
+             data.group is string && data.group.size() <= 50 &&
+             data.currentPrice is number;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(request.resource.data) &&
+                      request.resource.data.id == resource.data.id &&
+                      request.resource.data.role == resource.data.role;
+      allow delete: if isOwner(userId) || isAdmin();
+
+      // Subcollection: Saved Scenarios
+      match /savedScenarios/{scenarioId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidId(scenarioId) && isValidSavedScenario(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidId(scenarioId) && isValidSavedScenario(request.resource.data, userId) &&
+                        request.resource.data.id == resource.data.id &&
+                        request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // Subcollection: Watchlists
+      match /watchlists/{watchlistId} {
+        allow get, list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId) && isValidId(watchlistId) && isValidWatchlist(request.resource.data, userId);
+        allow update: if isOwner(userId) && isValidId(watchlistId) && isValidWatchlist(request.resource.data, userId) &&
+                        request.resource.data.id == resource.data.id &&
+                        request.resource.data.userId == resource.data.userId;
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // Market Updates Feed
+    match /marketUpdates/{updateId} {
+      allow get, list: if true;
+      allow create: if isAdmin() && isValidId(updateId) && isValidLiveUpdate(request.resource.data);
+      allow update: if isAdmin() && isValidId(updateId) && isValidLiveUpdate(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Mandi Price Predictor",
+  "description": "Pan-India agricultural Mandi price prediction, time series forecasting, and cultivation cost analytics platform covering all 28 Indian states and key APMC markets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

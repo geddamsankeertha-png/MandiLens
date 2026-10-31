@@ -1,0 +1,220 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role and preferences",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique user identifier matching auth UID",
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "description": "User email address",
+          "maxLength": 256
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name",
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "description": "Agricultural persona role",
+          "enum": ["farmer", "trader", "analyst"],
+          "maxLength": 20
+        },
+        "preferredState": {
+          "type": "string",
+          "description": "Default selected state",
+          "maxLength": 50
+        },
+        "preferredMarket": {
+          "type": "string",
+          "description": "Default selected market/mandi",
+          "maxLength": 50
+        },
+        "phone": {
+          "type": "string",
+          "description": "User mobile phone number",
+          "maxLength": 20
+        },
+        "emailVerified": {
+          "type": "boolean",
+          "description": "Whether user email has been verified"
+        },
+        "phoneVerified": {
+          "type": "boolean",
+          "description": "Whether user phone number has been verified via OTP"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of user creation",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "email", "role"]
+    },
+    "SavedScenario": {
+      "title": "SavedScenario",
+      "description": "Saved crop cultivation cost simulation and predicted price",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique scenario ID",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner user ID",
+          "maxLength": 128
+        },
+        "cropGroup": {
+          "type": "string",
+          "description": "Crop category group",
+          "maxLength": 50
+        },
+        "cropName": {
+          "type": "string",
+          "description": "Specific crop name",
+          "maxLength": 100
+        },
+        "state": {
+          "type": "string",
+          "description": "State name",
+          "maxLength": 50
+        },
+        "market": {
+          "type": "string",
+          "description": "APMC market name",
+          "maxLength": 50
+        },
+        "predictedPriceQuintal": {
+          "type": "number",
+          "description": "Model predicted price per quintal in INR"
+        },
+        "predictedPriceTonne": {
+          "type": "number",
+          "description": "Model predicted price per tonne in INR"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "userId", "cropGroup", "state", "market", "predictedPriceQuintal"]
+    },
+    "WatchlistMandi": {
+      "title": "WatchlistMandi",
+      "description": "Monitored mandi and target price alerts",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for watchlist item",
+          "maxLength": 128
+        },
+        "userId": {
+          "type": "string",
+          "description": "User UID who bookmarked this mandi",
+          "maxLength": 128
+        },
+        "state": {
+          "type": "string",
+          "description": "State name",
+          "maxLength": 50
+        },
+        "market": {
+          "type": "string",
+          "description": "Market name",
+          "maxLength": 50
+        },
+        "targetPrice": {
+          "type": "number",
+          "description": "Price alert threshold in INR"
+        },
+        "alertCondition": {
+          "type": "string",
+          "description": "Alert condition",
+          "enum": ["above", "below"],
+          "maxLength": 20
+        },
+        "addedAt": {
+          "type": "string",
+          "description": "Timestamp when added",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "userId", "state", "market"]
+    },
+    "LiveMarketUpdate": {
+      "title": "LiveMarketUpdate",
+      "description": "Simulated live mandi trade tick",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Tick ID",
+          "maxLength": 128
+        },
+        "state": {
+          "type": "string",
+          "description": "State name",
+          "maxLength": 50
+        },
+        "market": {
+          "type": "string",
+          "description": "Market name",
+          "maxLength": 50
+        },
+        "group": {
+          "type": "string",
+          "description": "Crop group",
+          "maxLength": 50
+        },
+        "currentPrice": {
+          "type": "number",
+          "description": "Current price in INR"
+        },
+        "momChangePercent": {
+          "type": "number",
+          "description": "Month-over-month change percentage"
+        },
+        "direction": {
+          "type": "string",
+          "description": "Trend direction",
+          "enum": ["up", "down", "flat"],
+          "maxLength": 10
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Tick timestamp",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "state", "market", "group", "currentPrice"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user profiles with role and preferences"
+    },
+    "/users/{userId}/savedScenarios/{scenarioId}": {
+      "schema": { "$ref": "#/entities/SavedScenario" },
+      "description": "Stores user's saved predictive cultivation scenarios"
+    },
+    "/users/{userId}/watchlists/{watchlistId}": {
+      "schema": { "$ref": "#/entities/WatchlistMandi" },
+      "description": "User's bookmarked mandis and price alerts"
+    },
+    "/marketUpdates/{updateId}": {
+      "schema": { "$ref": "#/entities/LiveMarketUpdate" },
+      "description": "Public real-time mandi price updates feed"
+    }
+  }
+}
