@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # KisanMandi Platform
 
 React and Express demo for agricultural market dashboards, price forecasts, and administration screens.
@@ -15,3 +16,7 @@ React and Express demo for agricultural market dashboards, price forecasts, and 
 - Administrative API routes require a signed admin token, but this repository does not yet connect Firebase identity tokens to the server token verifier. Admin operations remain unavailable until that trusted integration exists.
 - Price feed fallbacks and model predictions are demo data. They are explicitly marked as unverified or simulated and must not be treated as current market quotes or validated forecasts.
 - Pipeline status, retraining, and backfill screens include demo state; durable ingestion, model training, and historical backfill are not connected.
+=======
+# MandiLens
+AI-Powered Mandi Price Intelligence for India See Tomorrow’s Mandi Price Today.
+>>>>>>> 651c395d8d10ad7c8a35d80bb9a6edfee23dd1a6
