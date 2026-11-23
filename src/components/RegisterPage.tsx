@@ -6,7 +6,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   ShieldCheck,
-  CheckCircle2,
   Mail,
   Lock,
   User,
@@ -47,8 +46,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
 
   const [pendingVerification, setPendingVerification] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
-  const [devToken, setDevToken] = useState<string | null>(null);
-  const [manualToken, setManualToken] = useState('');
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
 
   const [formError, setFormError] = useState<string | null>(null);
@@ -121,9 +118,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       });
 
       setRegisteredEmail(email.trim().toLowerCase());
-      if (authRes?.dev_token) {
-        setDevToken(authRes.dev_token);
-      }
+      setVerifyMessage(authRes?.message || 'Registration complete. Check your email for a verification link.');
       setPendingVerification(true);
     } catch (err: any) {
       console.error('Registration failed:', err);
@@ -138,9 +133,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     setIsResending(true);
     try {
       const res = await predictionApi.resendVerification(registeredEmail);
-      if (res.dev_token) {
-        setDevToken(res.dev_token);
-      }
       setVerifyMessage(res.message || 'Verification email resent.');
     } catch (err: any) {
       setFormError(err?.message || 'Failed to resend verification email.');
@@ -160,7 +152,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           <div className="space-y-2">
             <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">Check Your Email</h1>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              We have sent a verification link to <strong className="text-emerald-700 dark:text-emerald-400">{registeredEmail}</strong>. Please check your inbox and click the link to activate your account.
+              {verifyMessage || <>We have sent a verification link to <strong className="text-emerald-700 dark:text-emerald-400">{registeredEmail}</strong>. Please check your inbox and click the link to activate your account.</>}
             </p>
           </div>
 
@@ -171,53 +163,12 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           )}
 
           {verifyMessage && (
-            <div role="status" className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 text-xs text-emerald-700 dark:text-emerald-300">
+            <div role="status" className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300">
               {verifyMessage}
             </div>
           )}
 
-          {devToken && (
-            <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl text-left space-y-2">
-              <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>Development / SMTP Unconfigured Mode</span>
-              </div>
-              <p className="text-[11px] text-amber-700 dark:text-amber-400">
-                SMTP credentials are not configured in environment variables. For testing and demonstration, use the verification token below:
-              </p>
-              <div className="p-2 bg-white dark:bg-slate-900 rounded border border-amber-300 dark:border-amber-700 font-mono text-[10px] break-all text-slate-800 dark:text-slate-200">
-                {devToken}
-              </div>
-              <button
-                type="button"
-                onClick={() => handleVerifyTokenSubmit(devToken)}
-                className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Verify Instantly with Dev Token</span>
-              </button>
-            </div>
-          )}
-
           <div className="space-y-3 pt-2">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Or paste verification token..."
-                value={manualToken}
-                onChange={(e) => setManualToken(e.target.value)}
-                className="flex-1 px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl"
-              />
-              <button
-                type="button"
-                disabled={!manualToken.trim() || isSubmitting}
-                onClick={() => handleVerifyTokenSubmit(manualToken.trim())}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl disabled:opacity-50"
-              >
-                Verify
-              </button>
-            </div>
-
             <button
               type="button"
               onClick={handleResendVerification}

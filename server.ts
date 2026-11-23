@@ -57,7 +57,7 @@ import { getMLCache } from './server/mlRunner.ts';
 import { pipelineEngine } from './server/dataPipeline.ts';
 import { monitoringEngine } from './server/modelMonitoring.ts';
 import { featureStore } from './server/featureStore.ts';
-import { sendVerificationEmail } from './server/mailService.ts';
+import { isSmtpConfigured, sendVerificationEmail } from './server/mailService.ts';
 import { agmarknetV2Client } from './server/agmarknetV2Client.ts';
 
 type AuthedRequest = Request & { user?: TokenPayload };
@@ -285,14 +285,23 @@ export function createApp() {
     const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
     const tokenExpiry = Date.now() + 30 * 60 * 1000; // 30 minutes expiry
 
-    const mailResult = await sendVerificationEmail(cleanEmail, verificationToken, cleanName);
-
     const isProd = process.env.NODE_ENV === 'production';
-    if (mailResult.success || !isProd) {
-      db.prepare(`
-        INSERT INTO email_verification_tokens (token_hash, user_id, expires_at, used, created_at)
-        VALUES (?, ?, ?, 0, ?)
-      `).run(tokenHash, id, tokenExpiry, nowIso);
+    // Persist the token before dispatch so the HTTP registration response does not
+    // wait on SMTP network latency. The link remains valid if delivery is delayed.
+    db.prepare(`
+      INSERT INTO email_verification_tokens (token_hash, user_id, expires_at, used, created_at)
+      VALUES (?, ?, ?, 0, ?)
+    `).run(tokenHash, id, tokenExpiry, nowIso);
+
+    const mailConfigured = isSmtpConfigured();
+    if (mailConfigured) {
+      void sendVerificationEmail(cleanEmail, verificationToken, cleanName).then((result) => {
+        if (!result.success) {
+          console.error('[Auth] Verification email could not be delivered; user may request a resend.');
+        }
+      }).catch(() => {
+        console.error('[Auth] Verification email dispatch failed unexpectedly.');
+      });
     }
 
     const created = db.prepare('SELECT * FROM users WHERE id = ?').get(id) as unknown as DbUser;
@@ -311,13 +320,12 @@ export function createApp() {
     return res.status(201).json({
       success: true,
       requiresVerification: true,
-      message: mailResult.success
-        ? 'Account registered successfully. Please check your email to verify your account.'
+      message: mailConfigured
+        ? 'Account registered successfully. Your verification email is being sent.'
         : isProd
         ? 'Account registered successfully, but email delivery is unconfigured in production.'
         : 'Account registered successfully, but SMTP is not configured. Email delivery is unavailable.',
       email: cleanEmail,
-      dev_token: isProd ? undefined : mailResult.devToken,
       user: sanitizeUserForClient(created),
     });
   });
@@ -374,7 +382,7 @@ export function createApp() {
     });
   });
 
-  app.post('/api/auth/resend-verification', rateLimiter(true), async (req: Request, res: Response) => {
+  app.post('/api/auth/resend-verification', rateLimiter(true), (req: Request, res: Response) => {
     const db = getDb();
     const { email } = req.body || {};
     const cleanEmail = String(email || '').trim().toLowerCase();
@@ -398,14 +406,21 @@ export function createApp() {
     const tokenHash = crypto.createHash('sha256').update(verificationToken).digest('hex');
     const nowIso = new Date().toISOString();
 
-    const mailResult = await sendVerificationEmail(user.email, verificationToken, user.name);
-
     const isProd = process.env.NODE_ENV === 'production';
-    if (mailResult.success || !isProd) {
-      db.prepare(`
-        INSERT INTO email_verification_tokens (token_hash, user_id, expires_at, used, created_at)
-        VALUES (?, ?, ?, 0, ?)
-      `).run(tokenHash, user.id, Date.now() + 30 * 60 * 1000, nowIso);
+    const mailConfigured = isSmtpConfigured();
+    db.prepare(`
+      INSERT INTO email_verification_tokens (token_hash, user_id, expires_at, used, created_at)
+      VALUES (?, ?, ?, 0, ?)
+    `).run(tokenHash, user.id, Date.now() + 30 * 60 * 1000, nowIso);
+
+    if (mailConfigured) {
+      void sendVerificationEmail(user.email, verificationToken, user.name).then((result) => {
+        if (!result.success) {
+          console.error('[Auth] Resend verification email could not be delivered.');
+        }
+      }).catch(() => {
+        console.error('[Auth] Resend verification dispatch failed unexpectedly.');
+      });
     }
 
     auditLogger.log({
@@ -421,12 +436,11 @@ export function createApp() {
 
     return res.json({
       success: true,
-      message: mailResult.success
-        ? 'Verification email resent successfully.'
+      message: mailConfigured
+        ? 'Verification email is being sent.'
         : isProd
         ? 'Email delivery service is currently unconfigured in production.'
         : 'SMTP not configured. Email delivery unavailable.',
-      dev_token: isProd ? undefined : mailResult.devToken,
     });
   });
 

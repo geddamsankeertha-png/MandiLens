@@ -31,12 +31,11 @@ import {
   ToggleRight,
   Radio,
 } from 'lucide-react';
-import { PageAccessMatrix } from './PageAccessMatrix';
 import { predictionApi, RealMLAlert } from '../services/predictionApi';
 import type { UserProfile, UserRole } from '../types/mandi';
 
 interface AdminDashboardProps {
-  initialTab?: 'home' | 'users' | 'data' | 'models' | 'alerts' | 'logs' | 'matrix';
+  initialTab?: 'home' | 'users' | 'data' | 'models' | 'alerts' | 'logs';
 }
 
 interface AdminUserRow {
@@ -95,7 +94,7 @@ interface AuditLogRow {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'home' }) => {
   const [adminSubTab, setAdminSubTab] = useState<
-    'home' | 'users' | 'data' | 'models' | 'monitoring' | 'alerts' | 'logs' | 'matrix'
+    'home' | 'users' | 'data' | 'models' | 'monitoring' | 'alerts' | 'logs'
   >(initialTab);
 
   useEffect(() => {
@@ -586,7 +585,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'ho
             { id: 'monitoring', label: 'Drift Monitoring', icon: Sliders },
             { id: 'alerts', label: 'E. Alerts', icon: Bell },
             { id: 'logs', label: 'F. Audit Logs', icon: Terminal },
-            { id: 'matrix', label: 'Access Matrix', icon: Shield },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = adminSubTab === tab.id;
@@ -1588,8 +1586,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ initialTab = 'ho
           </div>
         </div>
       )}
-
-      {adminSubTab === 'matrix' && <PageAccessMatrix />}
     </div>
   );
 };

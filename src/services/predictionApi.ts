@@ -303,7 +303,6 @@ class MandiPredictionApi {
       refresh_token: string;
       user: UserProfile;
       requiresVerification?: boolean;
-      dev_token?: string;
       message?: string;
     }>('/api/auth/register', {
       method: 'POST',
@@ -333,7 +332,7 @@ class MandiPredictionApi {
   }
 
   async resendVerification(email: string) {
-    return this.request<{ success: boolean; message: string; dev_token?: string }>('/api/auth/resend-verification', {
+    return this.request<{ success: boolean; message: string }>('/api/auth/resend-verification', {
       method: 'POST',
       body: JSON.stringify({ email }),
     });

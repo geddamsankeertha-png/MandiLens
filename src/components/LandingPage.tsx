@@ -18,7 +18,6 @@ import {
   UserPlus,
 } from 'lucide-react';
 import { UserProfile } from '../types/mandi';
-import { PageAccessMatrix } from './PageAccessMatrix';
 
 interface LandingPageProps {
   onNavigateToRegister: () => void;
@@ -26,7 +25,6 @@ interface LandingPageProps {
   onNavigateToExplorer: () => void;
   currentUser?: UserProfile | null;
   onSelectRole?: (role: 'guest' | 'farmer' | 'trader' | 'analyst' | 'admin') => void;
-  onNavigateToPage?: (pageId: string) => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -35,7 +33,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onNavigateToExplorer,
   currentUser,
   onSelectRole,
-  onNavigateToPage,
 }) => {
   const commodities = [
     { name: 'Tomato', te: 'టొమాటో', unit: '₹/kg & ₹/qtl' },
@@ -367,13 +364,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
         </div>
-
-        {/* 14-Page RBAC Matrix */}
-        <PageAccessMatrix
-          currentUser={currentUser}
-          onNavigateToPage={onNavigateToPage}
-          onSelectRole={onSelectRole}
-        />
       </section>
     </div>
   );

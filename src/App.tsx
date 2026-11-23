@@ -39,6 +39,14 @@ export default function App() {
   } | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
 
+  // Verification emails link to the app root with ?token=...; render the
+  // registration screen so it can submit the token and sign the user in.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has('token')) {
+      setActiveTab('register');
+    }
+  }, []);
+
   // Initialize theme
   useEffect(() => {
     if (isDarkMode) {
@@ -252,7 +260,6 @@ export default function App() {
               }}
               currentUser={currentUser}
               onSelectRole={handleRoleSelect}
-              onNavigateToPage={handleNavigateToPage}
             />
           )}
 
