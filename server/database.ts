@@ -266,7 +266,34 @@ export function initializeSchema(db: DatabaseSync): void {
       revoked INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL
     );
+ 
+
   `);
+
+  // Migration: update existing users table
+  const userColumns = db
+    .prepare("PRAGMA table_info(users)")
+    .all() as Array<{ name: string }>;
+
+  const existingColumns = new Set(
+    userColumns.map((column) => column.name)
+  );
+
+  if (!existingColumns.has("email_verified")) {
+    db.exec(`
+      ALTER TABLE users
+      ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0
+    `);
+  }
+
+  if (!existingColumns.has("email_verified_at")) {
+    db.exec(`
+      ALTER TABLE users
+      ADD COLUMN email_verified_at TEXT
+    `);
+  }
+
+  console.log("Database schema migration completed.");
 }
 
 function parseCsvLine(line: string): string[] {
