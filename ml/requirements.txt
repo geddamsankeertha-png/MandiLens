@@ -1,0 +1,7 @@
+# KisanMandi Local Python ML Dependencies
+# Install with: pip install -r ml/requirements.txt
+# Note: ml/ml_engine.py also includes a pure-Python stdlib numerical engine fallback
+# if these libraries are not installed in an offline or restricted environment.
+pandas>=2.1.0
+numpy>=1.26.0
+scikit-learn>=1.4.0

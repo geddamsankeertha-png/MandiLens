@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: kisanmandi-platform
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_GOV_IN_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
